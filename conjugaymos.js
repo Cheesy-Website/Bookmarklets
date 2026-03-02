@@ -1,1 +1,75 @@
-javascript:(function(){function c(){if(document.getElementById("manual-answer-box"))return;var b=document.createElement("div");b.id="manual-answer-box",b.style.position="fixed",b.style.top="50px",b.style.left="10px",b.style.background="white",b.style.border="1px solid black",b.style.padding="10px",b.style.zIndex=999999,b.style.width="220px",b.style.boxShadow="0 3px 10px rgba(0,0,0,0.3)";var a=document.createElement("input");a.type="text",a.placeholder="Type answer…",a.style.width="100%",a.style.marginBottom="6px";var d=document.createElement("button");d.textContent="Set Answer",d.style.width="100%",d.style.cursor="pointer",b.appendChild(a),b.appendChild(d),document.body.appendChild(b)}function a(){c();var b=document.querySelector(".assignment");if(!b)return;var e=b.querySelector("#answer-field");if(!e)return;var f=Array.from(e.querySelectorAll("span")).find(s=>s.className.includes("bg-crimson"));if(!f)return;var g=f.textContent.trim();if(!g)return;var h=document.querySelector("#manual-answer-box input");if(!h)return;h.value!==g&&(h.value=g,h.dispatchEvent(new Event("input",{bubbles:!0})),h.dispatchEvent(new Event("change",{bubbles:!0})))}setInterval(a,1e3);})();
+javascript:(function(){
+    // Create manual answer box if it doesn't exist
+    function createManualBox(){
+        if(document.getElementById("manual-answer-box")) return;
+
+        const box=document.createElement("div");
+        box.id="manual-answer-box";
+        box.style.position="fixed";
+        box.style.top="50px";
+        box.style.left="10px";
+        box.style.background="white";
+        box.style.border="1px solid black";
+        box.style.padding="10px";
+        box.style.zIndex=999999;
+        box.style.width="220px";
+        box.style.boxShadow="0 3px 10px rgba(0,0,0,0.3)";
+
+        const input=document.createElement("input");
+        input.type="text";
+        input.placeholder="Type answer…";
+        input.style.width="100%";
+        input.style.marginBottom="6px";
+
+        const btn=document.createElement("button");
+        btn.textContent="Set Answer";
+        btn.style.width="100%";
+        btn.style.cursor="pointer";
+
+        // ✅ New onclick: set manual box AND actual answer input
+        btn.onclick=function(){
+            const val=input.value.trim();
+            if(!val) return;
+
+            // Fill the actual answer input field
+            const siteInput=document.querySelector("#answer-input");
+            if(siteInput){
+                siteInput.focus();
+                siteInput.value=val;
+                siteInput.dispatchEvent(new Event("input",{bubbles:true,composed:true}));
+                siteInput.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+            }
+        };
+
+        box.appendChild(input);
+        box.appendChild(btn);
+        document.body.appendChild(box);
+    }
+
+    // Auto-fill the manual input box with the correct answer if visible
+    function autoFillAnswer(){
+        createManualBox();
+
+        const answerField=document.querySelector("#answer-field");
+        if(!answerField) return;
+
+        const answerSpan=Array.from(answerField.querySelectorAll("span"))
+            .find(s=>s.className.includes("bg-crimson"));
+        if(!answerSpan) return;
+
+        const answerText=answerSpan.textContent.trim();
+        if(!answerText) return;
+
+        const input=document.querySelector("#manual-answer-box input");
+        if(!input) return;
+
+        if(input.value!==answerText){
+            input.value=answerText;
+            input.dispatchEvent(new Event("input",{bubbles:true}));
+            input.dispatchEvent(new Event("change",{bubbles:true}));
+        }
+    }
+
+    // Run every second to catch new answers
+    setInterval(autoFillAnswer,1000);
+})();
