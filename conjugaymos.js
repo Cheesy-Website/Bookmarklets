@@ -27,42 +27,71 @@ javascript:(function(){
 
         btn.onclick=function(){
             const val=input.value.trim();
-            if(!val) return;
+            if(!val){
+                console.log("[EXT] Set Answer clicked but input is empty");
+                return;
+            }
 
-            // Fill the actual #verb-input span
-            const verbInput=document.querySelector("#verb-input");
-            if(verbInput){
-                verbInput.textContent=val;
-                verbInput.dispatchEvent(new Event("input",{bubbles:true,composed:true}));
-                verbInput.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+            const answerInput=document.querySelector("#answer-input");
+            if(answerInput){
+                answerInput.value=val;
+                answerInput.dispatchEvent(new Event("input",{bubbles:true}));
+                answerInput.dispatchEvent(new Event("change",{bubbles:true}));
+                console.log("[EXT] Set Answer: typed into #answer-input ->", val);
+            } else {
+                console.log("[EXT] Set Answer: #answer-input not found");
             }
         };
 
         box.appendChild(input);
         box.appendChild(btn);
         document.body.appendChild(box);
+        console.log("[EXT] Manual answer box created");
     }
 
     function autoFillAnswer(){
         createManualBox();
 
         const answerField=document.querySelector("#answer-field");
-        if(!answerField) return;
+        if(!answerField) {
+            console.log("[EXT] autoFillAnswer: #answer-field not found");
+            return;
+        }
 
         const answerSpan=Array.from(answerField.querySelectorAll("span"))
             .find(s=>s.className.includes("bg-crimson"));
-        if(!answerSpan) return;
+        if(!answerSpan){
+            console.log("[EXT] autoFillAnswer: correct answer span not found");
+            return;
+        }
 
         const answerText=answerSpan.textContent.trim();
-        if(!answerText) return;
+        if(!answerText){
+            console.log("[EXT] autoFillAnswer: answer text empty");
+            return;
+        }
 
-        const input=document.querySelector("#manual-answer-box input");
-        if(!input) return;
+        const manualInput=document.querySelector("#manual-answer-box input");
+        if(!manualInput){
+            console.log("[EXT] autoFillAnswer: manual input not found");
+            return;
+        }
 
-        if(input.value!==answerText){
-            input.value=answerText;
-            input.dispatchEvent(new Event("input",{bubbles:true}));
-            input.dispatchEvent(new Event("change",{bubbles:true}));
+        if(manualInput.value!==answerText){
+            manualInput.value=answerText;
+            manualInput.dispatchEvent(new Event("input",{bubbles:true}));
+            manualInput.dispatchEvent(new Event("change",{bubbles:true}));
+            console.log("[EXT] Auto-filled manual box with:", answerText);
+        }
+
+        const answerInput=document.querySelector("#answer-input");
+        if(answerInput && answerInput.value!==answerText){
+            answerInput.value=answerText;
+            answerInput.dispatchEvent(new Event("input",{bubbles:true}));
+            answerInput.dispatchEvent(new Event("change",{bubbles:true}));
+            console.log("[EXT] Auto-filled #answer-input with:", answerText);
+        } else if(!answerInput){
+            console.log("[EXT] #answer-input not found for auto-fill");
         }
     }
 
