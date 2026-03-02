@@ -1,5 +1,4 @@
 javascript:(function(){
-    // Create manual answer box if it doesn't exist
     function createManualBox(){
         if(document.getElementById("manual-answer-box")) return;
 
@@ -26,18 +25,16 @@ javascript:(function(){
         btn.style.width="100%";
         btn.style.cursor="pointer";
 
-        // ✅ New onclick: set manual box AND actual answer input
         btn.onclick=function(){
             const val=input.value.trim();
             if(!val) return;
 
-            // Fill the actual answer input field
-            const siteInput=document.querySelector("#answer-input");
-            if(siteInput){
-                siteInput.focus();
-                siteInput.value=val;
-                siteInput.dispatchEvent(new Event("input",{bubbles:true,composed:true}));
-                siteInput.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
+            // Fill the actual #verb-input span
+            const verbInput=document.querySelector("#verb-input");
+            if(verbInput){
+                verbInput.textContent=val;
+                verbInput.dispatchEvent(new Event("input",{bubbles:true,composed:true}));
+                verbInput.dispatchEvent(new Event("change",{bubbles:true,composed:true}));
             }
         };
 
@@ -46,7 +43,6 @@ javascript:(function(){
         document.body.appendChild(box);
     }
 
-    // Auto-fill the manual input box with the correct answer if visible
     function autoFillAnswer(){
         createManualBox();
 
@@ -70,6 +66,5 @@ javascript:(function(){
         }
     }
 
-    // Run every second to catch new answers
     setInterval(autoFillAnswer,1000);
 })();
