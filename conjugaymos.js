@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ConjuGAYmos show, save & auto answer
+// @name         ConjuGAYmos show, save & auto answer (fixed)
 // @namespace    http://tampermonkey.net/
 // @version      2026-03-03
 // @description  Show, save, and auto-fill answers on Conjuguemos
@@ -62,33 +62,36 @@
         document.body.appendChild(box);
     }
 
-    /* ---------- Auto-fill manual box from answer-field ---------- */
+    /* ---------- Auto-fill manual box & answer input ---------- */
     function autoFillAnswer(){
         createManualBox();
 
-        const field = document.querySelector("#answer-field");
-        if(!field) return;
-
-        const span = Array.from(field.querySelectorAll("span")).find(s=>s.className.includes("bg-crimson"));
-        if(!span) return;
-
-        const answer = span.textContent.trim();
-        if(!answer) return;
-
-        const input = document.querySelector("#manual-answer-box input");
-        if(input && input.value !== answer){
-            input.value = answer;
-        }
-
-        // Auto-fill saved answer if exists
         const key = getStorageKey();
         const saved = key ? localStorage.getItem(key) : null;
         const answerInput = document.querySelector("#answer-input");
+
+        // 1️⃣ Auto-fill saved answer for #answer-input
         if(saved && answerInput){
-            answerInput.value = saved;
-            answerInput.dispatchEvent(new Event("input",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("change",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("keyup",{bubbles:true}));
+            if(answerInput.value !== saved){
+                answerInput.value = saved;
+                answerInput.dispatchEvent(new Event("input",{bubbles:true}));
+                answerInput.dispatchEvent(new Event("change",{bubbles:true}));
+                answerInput.dispatchEvent(new Event("keyup",{bubbles:true}));
+            }
+        }
+
+        // 2️⃣ Auto-fill manual box from #answer-field if visible
+        const field = document.querySelector("#answer-field");
+        if(field){
+            const span = Array.from(field.querySelectorAll("span"))
+                .find(s=>s.className.includes("bg-crimson"));
+            if(span){
+                const answer = span.textContent.trim();
+                const input = document.querySelector("#manual-answer-box input");
+                if(input && input.value !== answer){
+                    input.value = answer;
+                }
+            }
         }
     }
 
