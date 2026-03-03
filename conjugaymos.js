@@ -15,7 +15,6 @@ javascript:(function(){
         box.style.boxShadow="0 3px 10px rgba(0,0,0,0.3)";
 
         const input=document.createElement("input");
-        input.type="text";
         input.placeholder="Type answer…";
         input.style.width="100%";
         input.style.marginBottom="6px";
@@ -23,24 +22,33 @@ javascript:(function(){
         const btn=document.createElement("button");
         btn.textContent="Set Answer";
         btn.style.width="100%";
-        btn.style.cursor="pointer";
 
         btn.onclick=function(){
             const val=input.value.trim();
             if(!val){
-                console.log("[EXT] Set Answer clicked but input is empty");
+                console.log("[EXT] No value to set");
                 return;
             }
 
-            const answerInput=document.querySelector("#answer-input");
-            if(answerInput){
-                answerInput.value=val;
-                answerInput.dispatchEvent(new Event("input",{bubbles:true}));
-                answerInput.dispatchEvent(new Event("change",{bubbles:true}));
-                console.log("[EXT] Set Answer: typed into #answer-input ->", val);
-            } else {
-                console.log("[EXT] Set Answer: #answer-input not found");
+            if(!window.$){
+                console.log("[EXT] jQuery not found");
+                return;
             }
+
+            const $answer=$("#answer-input");
+            if(!$answer.length){
+                console.log("[EXT] #answer-input not found");
+                return;
+            }
+
+            console.log("[EXT] Setting answer-input to:", val);
+            $answer
+                .val(val)
+                .trigger("input")
+                .trigger("change")
+                .trigger("keyup");
+
+            console.log("[EXT] Answer successfully injected");
         };
 
         box.appendChild(input);
@@ -49,51 +57,32 @@ javascript:(function(){
         console.log("[EXT] Manual answer box created");
     }
 
-    function autoFillAnswer(){
+    function autoFill(){
         createManualBox();
 
-        const answerField=document.querySelector("#answer-field");
-        if(!answerField) {
-            console.log("[EXT] autoFillAnswer: #answer-field not found");
+        const field=document.querySelector("#answer-field");
+        if(!field){
+            console.log("[EXT] No answer-field yet");
             return;
         }
 
-        const answerSpan=Array.from(answerField.querySelectorAll("span"))
+        const span=[...field.querySelectorAll("span")]
             .find(s=>s.className.includes("bg-crimson"));
-        if(!answerSpan){
-            console.log("[EXT] autoFillAnswer: correct answer span not found");
+
+        if(!span){
+            console.log("[EXT] No correct-answer span yet");
             return;
         }
 
-        const answerText=answerSpan.textContent.trim();
-        if(!answerText){
-            console.log("[EXT] autoFillAnswer: answer text empty");
-            return;
-        }
+        const answer=span.textContent.trim();
+        if(!answer) return;
 
-        const manualInput=document.querySelector("#manual-answer-box input");
-        if(!manualInput){
-            console.log("[EXT] autoFillAnswer: manual input not found");
-            return;
-        }
-
-        if(manualInput.value!==answerText){
-            manualInput.value=answerText;
-            manualInput.dispatchEvent(new Event("input",{bubbles:true}));
-            manualInput.dispatchEvent(new Event("change",{bubbles:true}));
-            console.log("[EXT] Auto-filled manual box with:", answerText);
-        }
-
-        const answerInput=document.querySelector("#answer-input");
-        if(answerInput && answerInput.value!==answerText){
-            answerInput.value=answerText;
-            answerInput.dispatchEvent(new Event("input",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("change",{bubbles:true}));
-            console.log("[EXT] Auto-filled #answer-input with:", answerText);
-        } else if(!answerInput){
-            console.log("[EXT] #answer-input not found for auto-fill");
+        const input=document.querySelector("#manual-answer-box input");
+        if(input.value!==answer){
+            input.value=answer;
+            console.log("[EXT] Manual box filled with:", answer);
         }
     }
 
-    setInterval(autoFillAnswer,1000);
+    setInterval(autoFill,1000);
 })();
