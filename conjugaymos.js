@@ -1,3 +1,27 @@
+// ==UserScript==
+// @name         ConjuGAYmos show answer and auto answer
+// @namespace    http://tampermonkey.net/
+// @version      2026-02-06
+// @description  It's self explanitory, dumbass
+// @author       Alex
+// @match        https://conjuguemos.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=conjuguemos.com
+// @grant        none
+// ==/UserScript==
+
+javascript:(function(){
+    const inject=document.createElement("script");
+    inject.textContent=`
+      (function(){
+        if(typeof window.settings==="undefined") window.settings={};
+        window.settings.see_correct=true;
+        console.log("[PAGE] settings.see_correct = true");
+      })();
+    `;
+    document.documentElement.appendChild(inject);
+    inject.remove();
+})();
+
 javascript:(function(){
     function createManualBox(){
         if(document.getElementById("manual-answer-box")) return;
@@ -30,21 +54,23 @@ javascript:(function(){
                 return;
             }
 
-            const answerInput=document.querySelector("#answer-input");
-            if(!answerInput){
+            if(!window.$){
+                console.log("[EXT] jQuery not found");
+                return;
+            }
+
+            const $answer=$("#answer-input");
+            if(!$answer.length){
                 console.log("[EXT] #answer-input not found");
                 return;
             }
 
-            console.log("[EXT] Injecting answer:", val);
-
-            // 🔑 THIS IS THE IMPORTANT PART
-            answerInput.focus();
-            answerInput.value = val;
-
-            answerInput.dispatchEvent(new Event("input", { bubbles: true }));
-            answerInput.dispatchEvent(new Event("change", { bubbles: true }));
-            answerInput.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true, key: "a" }));
+            console.log("[EXT] Setting answer-input to:", val);
+            $answer
+                .val(val)
+                .trigger("input")
+                .trigger("change")
+                .trigger("keyup");
 
             console.log("[EXT] Answer successfully injected");
         };
@@ -59,18 +85,24 @@ javascript:(function(){
         createManualBox();
 
         const field=document.querySelector("#answer-field");
-        if(!field) return;
+        if(!field){
+            console.log("[EXT] No answer-field yet");
+            return;
+        }
 
         const span=[...field.querySelectorAll("span")]
             .find(s=>s.className.includes("bg-crimson"));
 
-        if(!span) return;
+        if(!span){
+            console.log("[EXT] No correct-answer span yet");
+            return;
+        }
 
         const answer=span.textContent.trim();
         if(!answer) return;
 
         const input=document.querySelector("#manual-answer-box input");
-        if(input && input.value!==answer){
+        if(input.value!==answer){
             input.value=answer;
             console.log("[EXT] Manual box filled with:", answer);
         }
@@ -78,3 +110,6 @@ javascript:(function(){
 
     setInterval(autoFill,1000);
 })();
+
+
+
