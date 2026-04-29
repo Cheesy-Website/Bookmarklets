@@ -1,139 +1,114 @@
 // ==UserScript==
-// @name         ConjuGAYmos show, save & auto answer
+// @name         Conjuguemos Auto Save + Auto Answer + Auto Submit
 // @namespace    http://tampermonkey.net/
-// @version      2026-03-03
-// @description  Show, save, and auto-fill answers on Conjuguemos
-// @author       Alex
+// @version      1.0
+// @description  Saves answers, auto-fills them, and auto-submits
 // @match        https://conjuguemos.com/*
 // @grant        none
 // ==/UserScript==
 
-(function(){
-    'use strict';
+(function () {
+    "use strict";
 
-    /* ---------- Helpers ---------- */
-    function getQuestionText() {
+    console.log("[EXT] Script loaded");
+
+    let delayMs = 5000; // default
+
+    /* ---------- ASK DELAY ---------- */
+    function askDelay() {
+        let delay = prompt("Seconds between auto-submit:", "5");
+        if (!delay) return;
+
+        delay = parseFloat(delay);
+        if (!isNaN(delay) && delay > 0) {
+            delayMs = delay * 1000;
+        }
+
+        console.log("[EXT] Auto-submit every", delayMs, "ms");
+    }
+
+    /* ---------- QUESTION KEY ---------- */
+    function getQuestionKey() {
+        const q = document.querySelector("#question-input")?.textContent.trim();
+        if (q) return "cg_" + q.toLowerCase();
+
         const pronoun = document.querySelector("#pronoun-input")?.textContent.trim();
         const verb = document.querySelector("#verb-input")?.textContent.trim();
-        return pronoun && verb ? pronoun + "|" + verb : null;
+
+        if (pronoun && verb) {
+            return `cg_${pronoun}|${verb}`.toLowerCase();
+        }
+
+        return null;
     }
 
-    function getStorageKey() {
-        const q = getQuestionText();
-        return q ? "answer_" + q.toLowerCase() : null;
+    /* ---------- TYPE ANSWER ---------- */
+    function typeAnswer(value) {
+        const input = document.querySelector("#answer-input");
+        if (!input) return false;
+
+        input.focus();
+        input.value = value;
+
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+
+        console.log("[EXT] Typed:", value);
+        return true;
     }
 
-    /* ---------- Manual Answer Box ---------- */
-    function createManualBox() {
-        if(document.getElementById("manual-answer-box")) return;
+    /* ---------- MAIN LOOP ---------- */
+    function loop() {
+        const key = getQuestionKey();
+        if (!key) return;
 
-        const box = document.createElement("div");
-        box.id = "manual-answer-box";
-        box.style.cssText = `
-            position: fixed; top: 50px; left: 10px; width: 240px;
-            background: white; border: 1px solid black; padding: 10px;
-            z-index: 999999; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-        `;
+        const input = document.querySelector("#answer-input");
+        const btn = document.querySelector(".js-check-button");
+        if (!input || !btn) return;
 
-        const input = document.createElement("input");
-        input.placeholder = "Type answer…";
-        input.style.cssText = "width:100%; margin-bottom:6px;";
+        /* 🔹 LOAD SAVED ANSWER */
+        const saved = localStorage.getItem(key);
+        if (saved && input.value !== saved) {
+            console.log("[EXT] Auto-fill:", saved);
+            typeAnswer(saved);
+        }
 
-        const btn = document.createElement("button");
-        btn.textContent = "Set Answer";
-        btn.style.width = "100%";
-
-        btn.onclick = () => {
-            const val = input.value.trim();
-            if(!val) return;
-
-            const key = getStorageKey();
-            if(key) localStorage.setItem(key, val);
-
-            const answerInput = document.querySelector("#answer-input");
-            if(answerInput){
-                answerInput.value = val;
-                answerInput.dispatchEvent(new Event("input",{bubbles:true}));
-                answerInput.dispatchEvent(new Event("change",{bubbles:true}));
-                answerInput.dispatchEvent(new Event("keyup",{bubbles:true}));
+        /* 🔹 SAVE FROM RED ANSWER */
+        const span = document.querySelector("#answer-field span[class*='bg-crimson']");
+        if (span) {
+            const answer = span.textContent.trim();
+            if (answer && localStorage.getItem(key) !== answer) {
+                localStorage.setItem(key, answer);
+                console.log("[EXT] Saved:", key, "=", answer);
             }
-        };
 
-        box.appendChild(input);
-        box.appendChild(btn);
-        document.body.appendChild(box);
-    }
+            if (input.value !== answer) {
+                typeAnswer(answer);
+            }
+        }
 
-    /* ---------- Observe answers and save them ---------- */
-    function observeAnswers() {
-        createManualBox();
-        const field = document.querySelector("#answer-field");
-        if(!field) return;
-
-        const span = Array.from(field.querySelectorAll("span")).find(s=>s.className.includes("bg-crimson"));
-        if(!span) return;
-
-        const answer = span.textContent.trim();
-        if(!answer) return;
-
-        // Save to localStorage
-        const key = getStorageKey();
-        if(key) localStorage.setItem(key, answer);
-
-        // Fill the manual box
-        const manualInput = document.querySelector("#manual-answer-box input");
-        if(manualInput && manualInput.value !== answer) manualInput.value = answer;
-
-        // Fill the real answer input
-        const answerInput = document.querySelector("#answer-input");
-        if(answerInput && answerInput.value !== answer){
-            answerInput.value = answer;
-            answerInput.dispatchEvent(new Event("input",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("change",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("keyup",{bubbles:true}));
+        /* 🔹 AUTO SUBMIT */
+        if (!btn.classList.contains("disabled") && input.value.trim()) {
+            btn.click();
+            console.log("[EXT] Submitted");
         }
     }
 
-    /* ---------- Auto-fill saved answers for same question ---------- */
-    function autofillSaved() {
-        const key = getStorageKey();
-        const saved = key ? localStorage.getItem(key) : null;
-        if(!saved) return;
+    /* ---------- WAIT FOR GAME ---------- */
+    function waitForGame() {
+        const input = document.querySelector("#answer-input");
+        if (input) {
+            console.log("[EXT] Game detected");
 
-        const answerInput = document.querySelector("#answer-input");
-        const manualInput = document.querySelector("#manual-answer-box input");
+            askDelay();
 
-        if(answerInput && answerInput.value !== saved){
-            answerInput.value = saved;
-            answerInput.dispatchEvent(new Event("input",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("change",{bubbles:true}));
-            answerInput.dispatchEvent(new Event("keyup",{bubbles:true}));
-        }
-
-        if(manualInput && manualInput.value !== saved){
-            manualInput.value = saved;
+            setInterval(loop, 400);          // fast logic loop
+            setInterval(loop, delayMs);      // slower submit loop
+        } else {
+            setTimeout(waitForGame, 500);
         }
     }
 
-    /* ---------- Main loop ---------- */
-    let lastQ = "";
-    const observer = new MutationObserver(()=>{
-        const q = getQuestionText();
-        if(!q) return;
-        if(q !== lastQ){
-            lastQ = q;
-            autofillSaved();
-        }
-        observeAnswers();
-    });
-
-    const questionNode = document.querySelector("#pronoun-input");
-    if(questionNode) observer.observe(questionNode.parentNode, {childList:true, subtree:true});
-
-    // Run every second in case elements appear late
-    setInterval(()=>{
-        autofillSaved();
-        observeAnswers();
-    }, 1000);
+    waitForGame();
 
 })();
